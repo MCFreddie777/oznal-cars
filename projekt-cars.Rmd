@@ -1,0 +1,26 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r}
+data <- read.csv(file = 'data/vehicles.csv', header = TRUE)
+data = subset(data, select = -1)
+```
+
+```{r}
+c('number of columns:', ncol(data))
+c('number of rows',nrow(data))
+```
+```{r}
+names = names(data)
+names
+```
+
+```{r}
+head(data,10)
+```
+
+```{r}
+summary(data)
+```

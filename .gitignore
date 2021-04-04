@@ -1,0 +1,10 @@
+# Data
+data/
+
+# Platform
+Thumbs.db
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
