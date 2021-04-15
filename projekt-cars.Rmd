@@ -27,6 +27,22 @@ V tejto časti si prejdeme a popíšeme dataset. Bližšie sa pozrieme akých s�
 c('number of columns:', ncol(data))
 c('number of rows',nrow(data))
 ```
+
+```{r}
+data1 <- na.omit(data) 
+c('pocet prazdnych hodnot v datasete: ',{nrow(data)-nrow(data1)})
+
+```
+```{r}
+data_na <- data[rowSums(is.na(data)) > 0,]
+data_na
+```
+```{r}
+data_na <- data[rowSums(is.na(data)) > 0,]
+data_na
+```
+
+
 ```{r}
 names = names(data)
 names
@@ -95,7 +111,7 @@ head(data,10)
 summary(data)
 ```
 
-Ako významné atribúty s ktorými dalej budeme pracovať sú: 
+Ako významné atribúty, s ktorými budeme dalej pracovať, sme vybrali: 
 
   - price
   - year
@@ -113,11 +129,64 @@ Ako významné atribúty s ktorými dalej budeme pracovať sú:
   
 
 ## Analýza atribútov
+
+### Cena (price)
+```{r}
+c('Počet prázdnych hodnôt:',sum(is.na(data$price)) )
+```
+```{r}
+boxplot(data["price"], las =2)
+
+```
+```{r}
+sort(data$price, decreasing = TRUE)
+```
+```{r}
+sort(data$price)
+```
+
+
+```{r}
+data[which(data$price == max(data$price)), ]
+```
+```{r}
+data[which(data$price == 0), ]
+```
+Máme veľké množstvo inzerátov s cenou 0, táto praktika sa používa pokiaľ chcete mať inzeráty na prvých stránkach, pretože ludia bežne hľadajú od najnižšej ceny po svoj cenový strop. 
+
+```{r}
+data <- data[!data$price >= 1111111, ]
+```
+
+Vychýlené hodnoty sme odstránili, odstránili sme hodnoty nad 1 111 111 pretože vyzerajú ako náhodné čísla, ktoré sa udávajú, pokiaľ autor čaká na ponuku
+
+```{r}
+boxplot(data["price"], las =2)
+```
+
+```{r}
+ggplot(data = data, aes(sample=price)) +
+  stat_qq() + 
+  stat_qq_line() +
+  scale_y_continuous(breaks = seq(0, 5000000, by = 50000)) 
+
+```
+ggplot nám zobrazuje že dáta ceny nepochádzajú z normálneho rozdelenia. 
+
 ### Rok (year)
 
 ```{r}
 c('Počet prázdnych hodnôt:',sum(is.na(data$year)) )
 ```
+```{r}
+ggplot(data = data, aes(sample=year)) +
+  stat_qq() + 
+  stat_qq_line() +
+  scale_y_continuous(breaks = seq(0, 10, by = 0.5)) 
+
+```
+Dáta rokov nepochádzajú z normálneho rozdelenia. 
+
 ```{r}
 filter(data, is.na(year))
 ```
@@ -136,7 +205,7 @@ ggplot(data, aes(x=year)) +
   theme(axis.text.x = element_text(angle = 90))
 ```
 
-Podľa grafu môžeme vidieť, že pravažné množstvo vozdieil ktoré sa predáva je nanajvýš 20 rokov stará. Nájdu sa tu aj vozidlá staršie, ale tie sa prevažne inzerujäú na špecializovaných fórach, napríklad veterán. 
+Podľa grafu môžeme vidieť, že pravažné množstvo vozidiel ktoré sa predáva je nanajvýš 20 rokov stará. Nájdu sa tu aj vozidlá staršie, ale tie sa prevažne inzerujäú na špecializovaných fórach, napríklad pre veterány. 
 
 Toto rozdelenie sa dalo predpokladať,  kedže [priemerný vek vozidla je 12 rokov](https://www.caranddriver.com/news/a33457915/average-age-vehicles-on-road-12-years/) - 
 
@@ -145,6 +214,7 @@ Toto rozdelenie sa dalo predpokladať,  kedže [priemerný vek vozidla je 12 rok
 ```{r}
 c('Počet prázdnych hodnôt:',sum(is.na(data$manufacturer)))
 ```
+Prázdne hodnoty "na" nemáme, ale obsahuje prázdne stringy celkovo až 18 tisíc záznamov má zle vyplnený inzerát.
 
 ```{r}
 filter(data, manufacturer == "")
@@ -154,22 +224,248 @@ group_manu <- data %>%
   group_by(manufacturer) %>%
   summarize(frequency = n())
 
-group_manu$manufacturer[which(group_manu$manufacturer == "")] <- "empty or wrong input"
+group_manu$manufacturer[which(group_manu$manufacturer == "")] <- "empty"
 
 group_manu
 ```
 ```{r}
 ggplot(data = group_manu, aes(x = manufacturer, y = frequency)) +
   geom_bar( stat = "identity", fill= 2, color="#ffffff") +
-  ylab("Aroma") +
-  xlab("Odroda")  +
+  ylab("Frekvencia") +
+  xlab("Výrobca")  +
   theme(axis.text.x = element_text(angle = 90)) +
   scale_y_continuous(breaks = seq(0, 100000, by = 5000)) 
+```
 
+### Model (Model)
 
+```{r}
+c('Počet prázdnych hodnôt:',sum(is.na(data$model)))
+```
+Prázdne hodnoty "na" nemáme, ale obsahuje prázdne stringy celkovo až 18 tisíc záznamov má zle vyplnený inzerát.
+
+```{r}
+filter(data, model == "")
+```
+
+Máme približne 5 tisíc záznamov, ktoré nemajú vyplnený stĺpec model
+
+```{r}
+group_manu <- data %>%
+  group_by(model) %>%
+  summarize(frequency = n())
+
+group_manu$model[which(group_manu$model == "")] <- "empty"
+
+group_manu
+```
+### Stav (condition)
+
+```{r}
+nrow(filter(data, condition == ""))
+```
+Stlpec stavu vozdila nemá vyplnený skoro polovica inzerátov na craigliste. 
+
+```{r}
+length(unique(data[["condition"]]))
+```
+```{r}
+unique(data[["condition"]])
+```
+Ide iba o rýchlu informáciu v akom stave auto je, pokiaľ prechádzame inzeráty.
+
+```{r}
+group_manu <- data %>%
+  group_by(condition) %>%
+  summarize(frequency = n())
+
+ggplot(data = group_manu, aes(x = condition, y = frequency)) +
+  geom_bar( stat = "identity", fill= 2, color="#ffffff") +
+  ylab("Frekvencia") +
+  xlab("Výrobca")
+```
+
+### Počet valcov (cylinders)
+
+```{r}
+nrow(filter(data, cylinders == ""))
+```
+
+```{r}
+length(unique(data[["cylinders"]]))
+```
+```{r}
+unique(data[["cylinders"]])
 ```
 
 
-Možeme vidieť, že NA sa vždy neoplatí používať, v prípade výrobcu, velk0 mno6stvo ludí zle vyplnila políčka pre pridanie inzerátu. Meno výrobcu je spolu s modelom v atribúte *model*.
+```{r}
+group_manu <- data %>%
+  group_by(cylinders) %>%
+  summarize(frequency = n())
+
+ggplot(data = group_manu, aes(x = cylinders, y = frequency)) +
+  geom_bar( stat = "identity", fill= 2, color="#ffffff") +
+  ylab("Frekvencia") +
+  xlab("Počet valcov")
+```
+### Typ paliva (fuel)
+
+```{r}
+nrow(filter(data, fuel == ""))
+```
+
+```{r}
+length(unique(data[["fuel"]]))
+```
+```{r}
+unique(data[["fuel"]])
+```
+
+
+```{r}
+group_manu <- data %>%
+  group_by(fuel) %>%
+  summarize(frequency = n())
+
+ggplot(data = group_manu, aes(x = fuel, y = frequency)) +
+  geom_bar( stat = "identity", fill= 2, color="#ffffff") +
+  ylab("Frekvencia") +
+  xlab("Palivo")+
+  scale_y_continuous(breaks = seq(0, 500000, by = 20000)) 
+```
+Väčšina áut ktoré sú inzerované su benzínové. 
+
+### Počet kilometrov (odometer)
+
+
+
+
+### Typ prevodovky (transmission)
+
+```{r}
+nrow(filter(data, transmission == ""))
+```
+
+```{r}
+length(unique(data[["transmission"]]))
+```
+```{r}
+unique(data[["transmission"]])
+```
+
+
+```{r}
+group_manu <- data %>%
+  group_by(transmission) %>%
+  summarize(frequency = n())
+
+ggplot(data = group_manu, aes(x = transmission, y = frequency)) +
+  geom_bar( stat = "identity", fill= 2, color="#ffffff") +
+  ylab("Frekvencia") +
+  xlab("Prevodovka")+
+  scale_y_continuous(breaks = seq(0, 500000, by = 20000)) 
+```
+https://9gag.com/gag/apQr2RB
+
+### vin (vin)
+
+
+
+### pohon (drive)
+
+
+```{r}
+nrow(filter(data, drive == ""))
+```
+
+```{r}
+length(unique(data[["drive"]]))
+```
+```{r}
+unique(data[["drive"]])
+```
+
+
+```{r}
+group_manu <- data %>%
+  group_by(drive) %>%
+  summarize(frequency = n())
+
+ggplot(data = group_manu, aes(x = drive, y = frequency)) +
+  geom_bar( stat = "identity", fill= 2, color="#ffffff") +
+  ylab("Frekvencia") +
+  xlab("Pohon")+
+  scale_y_continuous(breaks = seq(0, 500000, by = 20000)) 
+```
+### veľkosť (size)
+
+```{r}
+nrow(filter(data, size == ""))
+```
+
+```{r}
+length(unique(data[["size"]]))
+```
+```{r}
+unique(data[["size"]])
+```
+
+```{r}
+group_manu <- data %>%
+  group_by(size) %>%
+  summarize(frequency = n())
+
+ggplot(data = group_manu, aes(x = size, y = frequency)) +
+  geom_bar( stat = "identity", fill= 2, color="#ffffff") +
+  ylab("Frekvencia") +
+  xlab("Velkosť")+
+  scale_y_continuous(breaks = seq(0, 500000, by = 20000)) 
+```
+
+
+### karosárske prevedenie (type)
+
+```{r}
+nrow(filter(data, type == ""))
+```
+
+```{r}
+length(unique(data[["type"]]))
+```
+```{r}
+unique(data[["type"]])
+```
+
+
+```{r}
+group_manu <- data %>%
+  group_by(type) %>%
+  summarize(frequency = n())
+
+ggplot(data = group_manu, aes(x = type, y = frequency)) +
+  geom_bar( stat = "identity", fill= 2, color="#ffffff") +
+  ylab("Frekvencia") +
+  xlab("Typ")+
+  scale_y_continuous(breaks = seq(0, 500000, by = 20000)) +
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
