@@ -4,7 +4,11 @@ output: html_document
 cvičenie: "Utorok 9:00"
 author: Bc. František Gič a Bc. Anton Rusňák
 ---
+
+## Inicializácia
+
 Načítanie knižníc
+
 ```{r}
 library(data.table)
 library(funModeling)
@@ -15,97 +19,76 @@ library(dplyr)
 ```
 
 Načítanie dát
+
 ```{r}
 data <- read.csv(file = 'data/vehicles.csv', header = TRUE)
 data = subset(data, select = -1)
 ```
 
-# Prieskumná analýza
+## Prieskumná analýza
 
 V tejto časti si prejdeme a popíšeme dataset. Bližšie sa pozrieme akých sú hodnôt a čo popisujú.   
+
 ```{r}
 c('number of columns:', ncol(data))
 c('number of rows',nrow(data))
 ```
 
+K dispozícii máme necelých 460 tisíc záznamov.  Pozrime sa na počet záznamov v datasete, ktoré obsahujú nejakú chýbajúcu hodnotu atribútu.
+
 ```{r}
 data1 <- na.omit(data) 
-c('pocet prazdnych hodnot v datasete: ',{nrow(data)-nrow(data1)})
-
+print(nrow(data) - nrow(data1))
 ```
+
+Môžme si pozrieť malú vzorku chývajúcich dát:
+
 ```{r}
 data_na <- data[rowSums(is.na(data)) > 0,]
-data_na
+data_na[1:5,]
 ```
-```{r}
-data_na <- data[rowSums(is.na(data)) > 0,]
-data_na
-```
-
-
-```{r}
-names = names(data)
-names
-```
-
-K dispozícii máme necelých 460 tisíc záznamov. 
-
-Atribútom máme celkovo 25. 
 
 ### Popis atribútov
 
-*id* - unikátny identifikátor záznamu - číselný 10 miestny údaj
-
-*url* - celá cesta, odkiaľ sa inzerát na vozidlo stiahol - url/string
-
-*region* - oblasť, z akého sa auto predáva - string
-
-*region_url* - cesta ku kategorii regionu na danom inzerčnom portáli - url/string
-
-*price* - kúplno/predajná cena vozdila - číselný údaj
-
-*year* = vyrobný rok vozdila - číselný údaj
-
-*manufacturer* - výrobca vozidla - string
-
-*model* - model vozdila - string
-
-*condition* - stav vozidla v akom sa vozdilo nachádza
-
-*cylinders* - počet valcov mootra daného vozidla
-
-*fuel* - typ paliva - string
-
-*odometer* - počet najazdených míľ  - číselný údaj 
-
-*title_status* - stav vozidla
-
-*transmission* - typ prevodovky vozidla - string
-
-*VIN* - (doplnkový údaj) identifikačné číslo vozdila
-
-*drive* - pohon vozidla - string
-
-*size* - označenie veľkosti vozidla napriklad full-size - string
-
-*type* - karosárske vyhotovenie vozidla - sedan, kupé, suv - string
-
-*pain_color* - farba vozdila - string
-
-*image_url* - cesta k obrázku daného vozdila - url/string
-
-*description* - popis vozidla
-
-*state* - oblasť predaja vozidla
-
-*lat a long* - súradnice
-
-*posting_data* - dátum uverejnenia inzerátu
-
-Nižšie máme menšiu ukážku dát a ich bližšií špecifikáciu. 
 ```{r}
-head(data,10)
+names(data)
 ```
+
+Atribútov máme celkovo 25. 
+
+- *id* - unikátny identifikátor záznamu - `číselný 10 miestny údaj`
+- *`url`* - celá cesta, odkiaľ sa inzerát na vozidlo stiahol - `url`/`string`
+- *region* - oblasť, z akého sa auto predáva - `string`
+- *region_`url`* - cesta ku kategorii regionu na danom inzerčnom portáli - `url`/`string`
+- *price* - kúplno/predajná cena vozdila - `číselný údaj`
+- *year* - vyrobný rok vozdila - `číselný údaj`
+- *manufacturer* - výrobca vozidla - `string`
+- *model* - model vozdila - `string`
+- *condition* - stav vozidla v akom sa vozdilo nachádza
+- *cylinders* - počet valcov mootra daného vozidla
+- *fuel* - typ paliva - `string`
+- *odometer* - počet najazdených míľ  - `číselný údaj` 
+- *title_status* - stav vozidla
+- *transmission* - typ prevodovky vozidla - `string`
+- *VIN* - (doplnkový údaj) identifikačné číslo vozdila
+- *drive* - pohon vozidla - `string`
+- *size* - označenie veľkosti vozidla napriklad full-size - `string`
+- *type* - karosárske vyhotovenie vozidla - sedan, kupé, suv - `string`
+- *pain_color* - farba vozidla - `string`
+- *image_`url`* - cesta k obrázku daného vozidla - `url`/`string`
+- *description* - popis vozidla
+- *state* - oblasť predaja vozidla
+- *lat a long* - súradnice
+- *posting_data* - dátum uverejnenia inzerátu
+
+
+Nižšie máme menšiu ukážku dát a ich bližšiu špecifikáciu. 
+
+```{r}
+head(data,5)
+```
+
+### Deskriptívna štatistika 
 
 ```{r}
 summary(data)
@@ -113,55 +96,66 @@ summary(data)
 
 Ako významné atribúty, s ktorými budeme dalej pracovať, sme vybrali: 
 
-  - price
-  - year
-  - manufacturer
-  - model
-  - condition
-  - cylinders
-  - fuel
-  - odometer
-  - transmission
-  - vin
-  - drive
-  - size
-  - type
+- price
+- year
+- manufacturer
+- model
+- condition
+- cylinders
+- fuel
+- odometer
+- transmission
+- vin
+- drive
+- size
+- type
   
 
 ## Analýza atribútov
 
 ### Cena (price)
-```{r}
-c('Počet prázdnych hodnôt:',sum(is.na(data$price)) )
-```
-```{r}
-boxplot(data["price"], las =2)
-
-```
-```{r}
-sort(data$price, decreasing = TRUE)
-```
-```{r}
-sort(data$price)
-```
-
+Pozrieme sa či v atribúte máme nejaké prázdné hodnoty:
 
 ```{r}
-data[which(data$price == max(data$price)), ]
+sum(is.na(data$price))
 ```
+
+Pozrieme sa na vychýlené hodnoty v atribúte
+
 ```{r}
-data[which(data$price == 0), ]
+boxplot(data$price, las =2)
+
 ```
+
+Vidíme, že v atribúte `price` máme zopár dosť vysokých hodnôt. Buď ide o luxusné autá, alebo o "špinavé" hodnoty.
+
+```{r}
+data[order(-data$price),][1:5,]
+```
+
+Ako sme sa mohli presvedčiť, o žiadne Ferarri ani Lamborghini nejde, sú to nesprávne vyplnené dáta.
+
+
+```{r}
+data[order(data$price) & data$price < 1,]
+```
+
+Čo nás však neteší je však, ako sme sa mohli presvedčiť aj fakť že dosť vela hodnôt (33 753) tohto atribútu je nulových. Domnievame sa, že ide o umelo znížené alebo nešpecifikované sumy, práve z dôvodu rankingu v rebríčkoch inzerátov.
+
 Máme veľké množstvo inzerátov s cenou 0, táto praktika sa používa pokiaľ chcete mať inzeráty na prvých stránkach, pretože ludia bežne hľadajú od najnižšej ceny po svoj cenový strop. 
+
+```{r}
+nrow(data[data$price >= 1111111, ])
+```
 
 ```{r}
 data <- data[!data$price >= 1111111, ]
 ```
 
-Vychýlené hodnoty sme odstránili, odstránili sme hodnoty nad 1 111 111 pretože vyzerajú ako náhodné čísla, ktoré sa udávajú, pokiaľ autor čaká na ponuku
+Rozhodli sme sa vychýlené hodnoty sme odstrániť, odstránili sme hodnoty nad 1 111 111 pretože vyzerajú ako náhodné čísla, nakoľko ide o veľmi malý zlomok dát (44).
 
 ```{r}
-boxplot(data["price"], las =2)
+boxplot(data$price, las=2)
 ```
 
 ```{r}
@@ -169,34 +163,35 @@ ggplot(data = data, aes(sample=price)) +
   stat_qq() + 
   stat_qq_line() +
   scale_y_continuous(breaks = seq(0, 5000000, by = 50000)) 
-
 ```
-ggplot nám zobrazuje že dáta ceny nepochádzajú z normálneho rozdelenia. 
+
+Na ggplot-e máme možnosť vidieť že dáta ceny nepochádzajú z normálneho rozdelenia, a dátová sada je veľmi nafúknutá na koncoch ( veľký počet nulových a áut s vysokou cenou).
 
 ### Rok (year)
 
+Počet prázdnych hodnôt:
+
 ```{r}
-c('Počet prázdnych hodnôt:',sum(is.na(data$year)) )
+sum(is.na(data$year))
 ```
+Ako možeme vidieť, atribút *rok* má 1050 prázdnych hodnôt. 
+
+Jednou z možností ktorú sa domnievame je že v Amerike je bežné že sa autá prestavujú, je možné že predávajúci rok neudal z dôvodu, takejto prestavby, kde rok nehrá žiadnu rolu, napríklad: Karoséria vozidla je z roku 1970 a implementovaná technika z roku 2018. 
+
 ```{r}
-ggplot(data = data, aes(sample=year)) +
+data[is.na(data$year),][1:5,]
+```
+
+Ako môžeme vidieť, v atribúte description je častokrát uvádzaný aj rok daného automobilu, čiže prichádza du úvahy, že by sme mohli tento rok extrahovať namiesto týchto chýbajúcich hodnôt z tohto atribútu.
+
+```{r}
+ggplot(data = data[!is.na(data$year),], aes(sample=year)) +
   stat_qq() + 
   stat_qq_line() +
-  scale_y_continuous(breaks = seq(0, 10, by = 0.5)) 
-
+  scale_y_continuous(breaks = seq(1900, 2022, by = 10)) 
 ```
-Dáta rokov nepochádzajú z normálneho rozdelenia. 
-
 ```{r}
-filter(data, is.na(year))
-```
-
-Ako možeme vidieť, atribút *rok* má 1050 prázdnych hodnôt. V amerike je bežné že sa autá prestavujú, je možné že predávajúci rok neudal z dôvodu, takejto prestavby, kde rok nehrá žiadnu rolu, napríklad: Karoseria vozidla je z roku 1970 a implementovaná technika z roku 2018. 
-
-
-
-```{r}
-ggplot(data, aes(x=year)) + 
+ggplot(data = data[!is.na(data$year),], aes(x=year)) + 
   geom_histogram(bins = 121, fill= 6, color="#ffffff") +
   xlab("Rok") +
   ylab("Frekvencia") +
@@ -205,29 +200,38 @@ ggplot(data, aes(x=year)) +
   theme(axis.text.x = element_text(angle = 90))
 ```
 
-Podľa grafu môžeme vidieť, že pravažné množstvo vozidiel ktoré sa predáva je nanajvýš 20 rokov stará. Nájdu sa tu aj vozidlá staršie, ale tie sa prevažne inzerujäú na špecializovaných fórach, napríklad pre veterány. 
+Môžme vidieť, že dáta rokov nepochádzajú z normálneho rozdelenia. Starších vozidiel (pod 1990) aj novších máme nedostatok, naopak - čo sa dalo aj očakávať, vozidiel z posledných troch dekád je najviac. Nájdu sa tu aj vozidlá staršie, ale tie sa prevažne inzerujäú na špecializovaných fórach, napríklad pre veterány. 
 
-Toto rozdelenie sa dalo predpokladať,  kedže [priemerný vek vozidla je 12 rokov](https://www.caranddriver.com/news/a33457915/average-age-vehicles-on-road-12-years/) - 
+Toto rozdelenie sa dalo predpokladať, kedže [priemerný vek vozidla je 12 rokov](https://www.caranddriver.com/news/a33457915/average-age-vehicles-on-road-12-years/).
 
 ### Výrobca (manufacturer)
 
-```{r}
-c('Počet prázdnych hodnôt:',sum(is.na(data$manufacturer)))
-```
-Prázdne hodnoty "na" nemáme, ale obsahuje prázdne stringy celkovo až 18 tisíc záznamov má zle vyplnený inzerát.
+Počet prázdnych hodnôt.
 
 ```{r}
-filter(data, manufacturer == "")
+sum(is.na(data$manufacturer))
 ```
+
+Prázdne hodnoty "na" nemáme, ale obsahuje prázdne `string`y celkovo až 18 tisíc záznamov má zle vyplnený inzerát, alebo sa dáta stratili pri exportoch.
+
+```{r}
+nrow(data[data$manufacturer == "",])
+```
+
+Skúsime si vytvoriť histogram podľa frekvencie daných výrobcov:
+
 ```{r}
 group_manu <- data %>%
   group_by(manufacturer) %>%
   summarize(frequency = n())
 
-group_manu$manufacturer[which(group_manu$manufacturer == "")] <- "empty"
+group_manu$manufacturer[which(group_manu$manufacturer == "")] <- NA
 
-group_manu
+group_manu[order(-group_manu$frequency),]
 ```
+
+Vidíme že Amerika nesklamala, a rebríčku kraľuje domáci výrobca - `Ford`.
+
 ```{r}
 ggplot(data = group_manu, aes(x = manufacturer, y = frequency)) +
   geom_bar( stat = "identity", fill= 2, color="#ffffff") +
@@ -239,63 +243,80 @@ ggplot(data = group_manu, aes(x = manufacturer, y = frequency)) +
 
 ### Model (Model)
 
-```{r}
-c('Počet prázdnych hodnôt:',sum(is.na(data$model)))
-```
-Prázdne hodnoty "na" nemáme, ale obsahuje prázdne stringy celkovo až 18 tisíc záznamov má zle vyplnený inzerát.
+Počet prázdnych hodnôt:
 
 ```{r}
-filter(data, model == "")
+sum(is.na(data$model))
+```
+Prázdne hodnoty `na` nemáme, ale obsahuje prázdne `string`y.
+
+```{r}
+nrow(data[data$model == "",])
 ```
 
-Máme približne 5 tisíc záznamov, ktoré nemajú vyplnený stĺpec model
+Máme približne 5 tisíc záznamov, ktoré nemajú vyplnený stĺpec model. V nasledujúcej tabuľke síce vidíme že niektoré z dát obsahujú názvy modelov v popise inzerátu (`description`).
+
+```{r}
+data[data$model == "",][1:5,]
+```
 
 ```{r}
 group_manu <- data %>%
   group_by(model) %>%
   summarize(frequency = n())
 
-group_manu$model[which(group_manu$model == "")] <- "empty"
+group_manu$model[which(group_manu$model == "")] <- NA
 
-group_manu
+group_manu[order(-group_manu$frequency),]
 ```
+
 ### Stav (condition)
 
 ```{r}
-nrow(filter(data, condition == ""))
+nrow(data[data$condition == "",])
 ```
-Stlpec stavu vozdila nemá vyplnený skoro polovica inzerátov na craigliste. 
+
+Stĺpec stavu vozdila nemá vyplnený skoro polovica inzerátov na craigliste *ヽ(°〇°)ﾉ*.
+To bude docela prúser, nakoľko sme aj na základe tohto atribútu chceli určovať trendy cien vozidiel.
 
 ```{r}
-length(unique(data[["condition"]]))
+length(unique(data$condition))
 ```
+
 ```{r}
-unique(data[["condition"]])
+unique(data$condition)
 ```
 Ide iba o rýchlu informáciu v akom stave auto je, pokiaľ prechádzame inzeráty.
 
 ```{r}
-group_manu <- data %>%
+group_cond <- data %>%
   group_by(condition) %>%
   summarize(frequency = n())
 
-ggplot(data = group_manu, aes(x = condition, y = frequency)) +
+group_cond$condition[group_cond$condition ==""] <- NA
+
+ggplot(data = group_cond, aes(x = condition, y = frequency)) +
   geom_bar( stat = "identity", fill= 2, color="#ffffff") +
   ylab("Frekvencia") +
-  xlab("Výrobca")
+  xlab("Condition")
 ```
 
 ### Počet valcov (cylinders)
 
 ```{r}
-nrow(filter(data, cylinders == ""))
+nrow(data[is.na(data$cylinders),])
 ```
 
 ```{r}
-length(unique(data[["cylinders"]]))
+nrow(data[data$cylinders == "",])
+```
+Vidíme že skoro štvrtina záznamov obsahuje prázdny `string` v atribúte vyjadrujúcom počet valcov.
+
+```{r}
+length(unique(data$cylinders))
 ```
 ```{r}
-unique(data[["cylinders"]])
+unique(data$cylinders)
 ```
 
 
@@ -312,14 +333,20 @@ ggplot(data = group_manu, aes(x = cylinders, y = frequency)) +
 ### Typ paliva (fuel)
 
 ```{r}
-nrow(filter(data, fuel == ""))
+nrow(data[is.na(data$fuel),])
 ```
 
 ```{r}
-length(unique(data[["fuel"]]))
+nrow(data[data$fuel == "",])
 ```
+Vidíme, že 3237 áut jazdí zadarmo. *(✧ω✧)*
+
 ```{r}
-unique(data[["fuel"]])
+length(unique(data$fuel))
+```
+
+```{r}
+unique(data$fuel)
 ```
 
 
@@ -334,26 +361,55 @@ ggplot(data = group_manu, aes(x = fuel, y = frequency)) +
   xlab("Palivo")+
   scale_y_continuous(breaks = seq(0, 500000, by = 20000)) 
 ```
-Väčšina áut ktoré sú inzerované su benzínové. 
+Z histogramu vidíme, že väčšina áut ktoré sú inzerované su benzínové. 
 
 ### Počet kilometrov (odometer)
 
+```{r}
+nrow(data[is.na(data$odometer),])
+```
 
+```{r}
+nrow(data[data$odometer == "",])
+```
+```{r}
+boxplot(data$odometer, las=2)
+```
 
+```{r}
+data[order(-data$odometer),][1:10,]
+```
+
+```{r}
+data_gt_mil_odo <- data[!is.na(data$odometer) & data$odometer > 1000000,]
+data_gt_mil_odo[order(-data_gt_mil_odo$odometer),]
+```
+
+Vidíme, že približne 400 záznamov má príliš vysoké hodnoty - máme za domienku, že sú to vymyslené dáta.
+
+```{r}
+options(scipen=10)
+boxplot(data[data$odometer < 1000000,] $odometer, las=2)
+```
+Vidíme že po subsetovaní atribútu pod 1 milión míl sme dospeli k realistickejším dátam. Vidíme že väčšina hodnôt sa pohybuje v rozpätí od cca 45 000 až po 150 000. Medián sa pohybuje niečo pod 100k.
 
 ### Typ prevodovky (transmission)
 
 ```{r}
-nrow(filter(data, transmission == ""))
+nrow(data[is.na(data$transmission),])
 ```
 
 ```{r}
-length(unique(data[["transmission"]]))
-```
-```{r}
-unique(data[["transmission"]])
+nrow(data[data$transmission == "",])
 ```
 
+```{r}
+length(unique(data$transmission))
+```
+```{r}
+unique(data$transmission)
+```
+Vidíme že ide o kategorický atribút vyjadrujúci typ prevodovky.
 
 ```{r}
 group_manu <- data %>%
@@ -366,26 +422,40 @@ ggplot(data = group_manu, aes(x = transmission, y = frequency)) +
   xlab("Prevodovka")+
   scale_y_continuous(breaks = seq(0, 500000, by = 20000)) 
 ```
-https://9gag.com/gag/apQr2RB
+Vidíme že sa potvrdzuje fakt, že Američania nevedia riadiť manuál a že najlepším bezpečnostným systémom áut je manuálna prevodovka. 
+
+> What is that stick?
+![https://9gag.com/gag/apQr2RB](https://img-9gag-fun.9cache.com/photo/apQr2RB_700bwp.webp)
 
 ### vin (vin)
 
+```{r}
+nrow(data[is.na(data$VIN),])
+```
+
+```{r}
+nrow(data[data$VIN == "",])
+```
 
 
 ### pohon (drive)
 
 
 ```{r}
-nrow(filter(data, drive == ""))
+nrow(data[is.na(data$drive),])
 ```
 
 ```{r}
-length(unique(data[["drive"]]))
-```
-```{r}
-unique(data[["drive"]])
+nrow(data[data$drive == "",])
 ```
 
+```{r}
+length(unique(data$drive))
+```
+
+```{r}
+unique(data$drive)
+```
 
 ```{r}
 group_manu <- data %>%
@@ -398,17 +468,24 @@ ggplot(data = group_manu, aes(x = drive, y = frequency)) +
   xlab("Pohon")+
   scale_y_continuous(breaks = seq(0, 500000, by = 20000)) 
 ```
+Vidíme že väčšina z predávaných je poháňaná náhonom na všetky štyri kolesá. Veľkou skupinou dát sú aj dáta s neuvedenou hodnootu tohto atribútu.
+
 ### veľkosť (size)
 
 ```{r}
-nrow(filter(data, size == ""))
+nrow(data[is.na(data$size),])
 ```
 
 ```{r}
-length(unique(data[["size"]]))
+nrow(data[data$size == "",])
 ```
+
 ```{r}
-unique(data[["size"]])
+length(unique(data$size))
+```
+
+```{r}
+unique(data$size)
 ```
 
 ```{r}
@@ -423,18 +500,21 @@ ggplot(data = group_manu, aes(x = size, y = frequency)) +
   scale_y_continuous(breaks = seq(0, 500000, by = 20000)) 
 ```
 
-
 ### karosárske prevedenie (type)
 
 ```{r}
-nrow(filter(data, type == ""))
+nrow(data[is.na(data$type),])
 ```
 
 ```{r}
-length(unique(data[["type"]]))
+nrow(data[data$type == "",])
+```
+
+```{r}
+length(unique(data$type))
 ```
 ```{r}
-unique(data[["type"]])
+unique(data$type)
 ```
 
 
@@ -450,17 +530,59 @@ ggplot(data = group_manu, aes(x = type, y = frequency)) +
   scale_y_continuous(breaks = seq(0, 500000, by = 20000)) +
   theme(axis.text.x = element_text(angle = 90))
 ```
+## Párová analýza
 
 
+### Kategorické atribúty 
 
+### Vplyv typu paliva na počet najazdených míľ
 
+```{r}
+ggplot(data, aes(x = fuel, y = odometer)) + ylim(10,500000) + geom_boxplot()
+```
+Podľa boxplotu máme možnosť vidieť, že pri dieslových motoroch sa autá predávajú s vyšíím počtom najazdených míľ.
+Čo nás prekvapilo, je napríklad pomer hybridných a benzínových (gas) motorov. Domnievame sa však, že veľa dát je taktiež ešte nezatriedených v dátach s prázdnym atribútom `fuel`.
 
+```{r}
+ggplot(data, aes(x = drive, y = odometer)) + ylim(10,500000) + geom_boxplot()
+```
 
+```{r}
+ggplot(data, aes(x = transmission, y = odometer)) + ylim(10,500000) + geom_boxplot()
+```
 
+```{r}
+ggplot(data, aes(x = fuel, y = price)) + ylim(10,300000) + geom_boxplot()
+```
 
+```{r}
+ggplot(data, aes(x = drive, y = price)) + ylim(10,300000) + geom_boxplot()
+```
 
+```{r}
+ggplot(data, aes(x = transmission, y = price)) + ylim(10,300000) + geom_boxplot()
+```
 
+```{r}
+ggplot(data, aes(x=transmission, y=odometer, color=fuel)) + 
+  ylim(10,500000) +
+  geom_point(size=6) +
+  theme_bw()
+```
 
+```{r}
+ggplot(data = data, aes(x = transmission,y = price, shape = drive, colour= fuel)) + ylim(10,300000) + geom_jitter(size = 4) +  xlab("Prevodovka")
+```
+
+```{r}
+pairs(~price+odometer+year, data = data)
+```
+
+## Hypotézy
+
+1. Cena vozidla je vyššia v prípade že v inzeráte je definované VIN číslo.
+1. Trend počtu valcov v autách klesá spolu s rastúcim rokom (Môže za to downsizing motorov a snaha o odbremenenie životného prostredia)
+1. Dieslové autá ktoré majú pohon na všetky kolesá zvyčajne majú v inzerátoch vyšší počet najazdených míľ.
 
 
 
