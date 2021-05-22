@@ -36,9 +36,12 @@ c('number of rows',nrow(data))
 
 K dispozícii máme necelých 460 tisíc záznamov.  Pozrime sa na počet záznamov v datasete, ktoré obsahujú nejakú chýbajúcu hodnotu atribútu.
 
+
+
 ```{r}
 data1 <- na.omit(data) 
 print(nrow(data) - nrow(data1))
+
 ```
 
 Môžme si pozrieť malú vzorku chývajúcich dát:
@@ -123,6 +126,7 @@ sum(is.na(data$price))
 Pozrieme sa na vychýlené hodnoty v atribúte
 
 ```{r}
+
 boxplot(data$price, las =2)
 
 ```
@@ -366,6 +370,7 @@ Z histogramu vidíme, že väčšina áut ktoré sú inzerované su benzínové.
 ### Počet kilometrov (odometer)
 
 ```{r}
+
 nrow(data[is.na(data$odometer),])
 ```
 
@@ -388,6 +393,7 @@ data_gt_mil_odo[order(-data_gt_mil_odo$odometer),]
 Vidíme, že približne 400 záznamov má príliš vysoké hodnoty - máme za domienku, že sú to vymyslené dáta.
 
 ```{r}
+
 options(scipen=10)
 boxplot(data[data$odometer < 1000000,] $odometer, las=2)
 ```
@@ -479,7 +485,7 @@ nrow(data[is.na(data$size),])
 ```{r}
 nrow(data[data$size == "",])
 ```
-
+--
 ```{r}
 length(unique(data$size))
 ```
@@ -547,8 +553,10 @@ Podľa boxplotu máme možnosť vidieť, že pri dieslových motoroch sa autá p
 ggplot(data, aes(x = drive, y = odometer)) + ylim(10,500000) + geom_boxplot()
 ```
 
+
 ```{r}
 ggplot(data, aes(x = transmission, y = odometer)) + ylim(10,500000) + geom_boxplot()
+
 ```
 
 ```{r}
@@ -578,16 +586,37 @@ ggplot(data = data, aes(x = transmission,y = price, shape = drive, colour= fuel)
 pairs(~price+odometer+year, data = data)
 ```
 
+
+
+###Zhrnutie problémov
+V datasete sme identifikovali viacero problémov, medzi ne patria: 
+1. Vychýlené hodnoty (outliers)
+1. Zle vyplnené polia
+1. Prázdne hodnoty
+
+##Vychýlené hodnoty
+Do tejto kategórie spadájú kvantitatívne atribúty ako sú odometer, cena a rok.
+Pri odomotry máme viacerých outlierov, ktorý nám pripadajú, že sú buď ich hodnoty vymyslené alebo vznikli chybou vyplnenia. Pri cene to je také isté, niektoré modely majú prevýšenú cenu niekoľko krát, veľa inzerátov má zase nulovú cenu. Problémom pri týchto dátach ktoré máme je, že nie je jednoduché tie to dáta doplniť alebo ich nahradiť. Jednotlivé inzeráty by bolo potrebné rozdeliť podla značky, následne podľa modelu, roku, najazdených kilometrov atď., napríklad cena závisí od takýchto parametrov. Taktýmto krokom by sme si mohli aj sami zaviesť nepresnosti do dát, čím by mohli byť skreslné. Preto sa z našeho pohladu neoplatí vkladať značný effort na doplnenie týchto dát a radšej dané záznamy vymažeme.
+
+##Zle vyplnené polia
+Viaceré atribúty ako sú model, výrobca, prevodovka majú prázdne hodnoty. Buď je to zle vyplnené užívateľom, alebo crawler ktorý dáta stahoval mal implementačnú chybu. Niektoré atribúty by bolo možné opraviť, ale bolo by potrebné špecifické dáta, ktoré sme k dispozícii nenašli. Ide o to, že nie každý model ma všetky dostupné klonfigurácie. NIektoré modely nemusia mať manuálne prevodovky pokial majú pohon predných kolies a podobne. Preto bude najjednoduchšie tieto záznamy odstrániť. 
+
+##Prázdne hodnoty
+Prázdne hodnoty sme detekovali skoro v každom atribúte. Pri niektorých atribútoch nemáme možnosť ako ich doplniť - model, výrobca, palivo atď, pretože nepoznáme konfiguráciu vozidla. Pri niektorých to ani nemá význam, pretože ich majitel nezadal a nevieme odhadnúť skutočný popis vozidla - stav, typ karoserie, vin číslo. Preto tieto hodnoty budeme brať ako plus a možno majú dôvod vyššej ceny.
+
+Prevažne pri všetkých typoch problémov je pre nás najjednoduchšie odstrániť tieto záznamy. Pri atribútoch, ktoré nie sú vyplnené z dôvodu toho, že majiteľ ich nezadal, budeme k nim pristupovať ako k možnej príčine vyššej ceny. Niektoré prázdne alebo nedefinované hodnoty môžeme rozdeliť medzi ostatné atribúty, čím rozloženie ostane zostane rovnaké - napríklad typ prevodovky.
+
+
+
 ## Hypotézy
 
 1. Cena vozidla je vyššia v prípade že v inzeráte je definované VIN číslo.
 1. Trend počtu valcov v autách klesá spolu s rastúcim rokom (Môže za to downsizing motorov a snaha o odbremenenie životného prostredia)
 1. Dieslové autá ktoré majú pohon na všetky kolesá zvyčajne majú v inzerátoch vyšší počet najazdených míľ.
+1. Rozdeliť oblasť inzerátov na 3 časti východná, stredná a západná časť USA podľa súradníc a odsledovať, aké je rozdelenie využívaných aut a, či je v strednej časti viac využívaných pickupov ako iných modelov.
 
 
-
-
-
+Budeme postupovať metódou hypothesis-driven. BUdeme sa snažiť overiť naše stanovené hypotézy a overiť ich pravdivosť a v závere zhodnotiť. 
 
 
 
