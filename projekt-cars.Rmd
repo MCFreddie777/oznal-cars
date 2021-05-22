@@ -594,21 +594,21 @@ V datasete sme identifikovali viacero problémov, medzi ne patria:
 1. Zle vyplnené polia
 1. Prázdne hodnoty
 
-##Vychýlené hodnoty
+####Vychýlené hodnoty
 Do tejto kategórie spadájú kvantitatívne atribúty ako sú odometer, cena a rok.
 Pri odomotry máme viacerých outlierov, ktorý nám pripadajú, že sú buď ich hodnoty vymyslené alebo vznikli chybou vyplnenia. Pri cene to je také isté, niektoré modely majú prevýšenú cenu niekoľko krát, veľa inzerátov má zase nulovú cenu. Problémom pri týchto dátach ktoré máme je, že nie je jednoduché tie to dáta doplniť alebo ich nahradiť. Jednotlivé inzeráty by bolo potrebné rozdeliť podla značky, následne podľa modelu, roku, najazdených kilometrov atď., napríklad cena závisí od takýchto parametrov. Taktýmto krokom by sme si mohli aj sami zaviesť nepresnosti do dát, čím by mohli byť skreslné. Preto sa z našeho pohladu neoplatí vkladať značný effort na doplnenie týchto dát a radšej dané záznamy vymažeme.
 
-##Zle vyplnené polia
+####Zle vyplnené polia
 Viaceré atribúty ako sú model, výrobca, prevodovka majú prázdne hodnoty. Buď je to zle vyplnené užívateľom, alebo crawler ktorý dáta stahoval mal implementačnú chybu. Niektoré atribúty by bolo možné opraviť, ale bolo by potrebné špecifické dáta, ktoré sme k dispozícii nenašli. Ide o to, že nie každý model ma všetky dostupné klonfigurácie. NIektoré modely nemusia mať manuálne prevodovky pokial majú pohon predných kolies a podobne. Preto bude najjednoduchšie tieto záznamy odstrániť. 
 
-##Prázdne hodnoty
+####Prázdne hodnoty
 Prázdne hodnoty sme detekovali skoro v každom atribúte. Pri niektorých atribútoch nemáme možnosť ako ich doplniť - model, výrobca, palivo atď, pretože nepoznáme konfiguráciu vozidla. Pri niektorých to ani nemá význam, pretože ich majitel nezadal a nevieme odhadnúť skutočný popis vozidla - stav, typ karoserie, vin číslo. Preto tieto hodnoty budeme brať ako plus a možno majú dôvod vyššej ceny.
 
 Prevažne pri všetkých typoch problémov je pre nás najjednoduchšie odstrániť tieto záznamy. Pri atribútoch, ktoré nie sú vyplnené z dôvodu toho, že majiteľ ich nezadal, budeme k nim pristupovať ako k možnej príčine vyššej ceny. Niektoré prázdne alebo nedefinované hodnoty môžeme rozdeliť medzi ostatné atribúty, čím rozloženie ostane zostane rovnaké - napríklad typ prevodovky.
 
 
 
-## Hypotézy
+### Hypotézy
 
 1. Cena vozidla je vyššia v prípade že v inzeráte je definované VIN číslo.
 1. Trend počtu valcov v autách klesá spolu s rastúcim rokom (Môže za to downsizing motorov a snaha o odbremenenie životného prostredia)
@@ -617,6 +617,172 @@ Prevažne pri všetkých typoch problémov je pre nás najjednoduchšie odstrán
 
 
 Budeme postupovať metódou hypothesis-driven. BUdeme sa snažiť overiť naše stanovené hypotézy a overiť ich pravdivosť a v závere zhodnotiť. 
+
+##Čistenie dát
+
+###DUplikáty
+```{r}
+nrow(data)
+```
+
+```{r}
+nrow(unique(data))
+```
+Ako môžeme vidieť v našich dátach sa nenachádzajú duplikáty, teda nemáme prácu s ich odstránením. 
+
+
+###Odstránenie prázdnych hodnôt
+
+Ako sme spomínali skôr nie je možné dopĺňať stávajúce dáta, pretože prepojenosť dát je príliš veľká na to aby sme mohli jednotlivé záznamy dopĺnať. Mohli by vzniknúť kombinácie záznamov ktoré ani reálne neeexistujú. Preto je pre nás prínosnejšie tieto záznamy odstrániť, než si vedome vnášať vysoký bias do dát.
+```{r}
+data = data[!data$model == "",]
+```
+```{r}
+data = data[!data$manufacturer == "",]
+```
+```{r}
+data = data[!data$condition == "",]
+```
+```{r}
+data = data[!data$cylinders == "",]
+```
+```{r}
+data = data[!data$fuel == "",]
+```
+```{r}
+data = data[!data$transmission == "",]
+```
+```{r}
+data = data[!data$drive == "",]
+```
+```{r}
+data = data[!data$size == "",]
+```
+```{r}
+data = data[!data$type == "",]
+```
+```{r}
+data = data[!is.na(data$odometer), ]
+```
+```{r}
+data = data[!is.na(data$year), ]
+```
+
+Vin číslo odstraňovať nebudeme, pri tomto atribúte chceme zistiť, či má inzerát vyššiu cenu pokiaľ tento atribút existuje. 
+
+
+###Vysporiadanie sa s vychýlenými hodnotami. Tento problém máme pri atribútoch ceny a odometra.
+
+```{r}
+percentil <- function(x){
+    quantiles <- quantile( x, c(.05, .95 ) )
+    x[ x < quantiles[1] ] <- quantiles[1]
+    x[ x > quantiles[2] ] <- quantiles[2]
+    x
+}
+```
+
+###Price
+Pri cene sme sa stretli s tým, že veľké množstvo inzerátou uvádza nulu pri cene. Bude to z dôvodu lepšej viditeľnosti, kedže ludia väčšinou zoraduju produkty podla ceny. Pri týchto vozidlách nevieme zistiť realnu cenu, keždu sú to bud vozidlá na splátky alebo ceny podla dohody.
+```{r}
+data <- data[!data$price <= 500, ]
+```
+
+```{r}
+boxplot(data$price, las=2)
+```
+```{r}
+ggplot(data = data, aes(sample=price)) +
+  stat_qq() + 
+  stat_qq_line() +
+  scale_y_continuous(breaks = seq(0, 5000000, by = 50000)) 
+```
+
+ 
+
+
+
+```{r}
+data$price = percentil(data$price)
+```
+
+```{r}
+boxplot(data$price, las=2)
+```
+```{r}
+ggplot(data = data, aes(sample=price)) +
+  stat_qq() + 
+  stat_qq_line() +
+  scale_y_continuous(breaks = seq(0, 5000000, by = 50000)) 
+```
+
+Zarovnané koniec a začiatok ukazuje o tom ako 95 a 5 percentil funguje. Vychýlené hodnoty sme prevažne odstránili, čím distribúcia dát je lepšie ale stále nemá normálnu distribuciu
+
+
+#### Odometer
+
+```{r}
+boxplot(data$odometer, las=2)
+```
+
+```{r}
+ggplot(data = data, aes(sample=odometer)) +
+  stat_qq() + 
+  stat_qq_line() +
+  scale_y_continuous(breaks = seq(0, 1000000, by = 250000)) 
+```
+```{r}
+data <- data[!data$odometer > 1000000, ]
+```
+
+Pouziť percentil alebo nepoužiť percentil ?? 
+```{r}
+#data$odometer = percentil(data$odometer)
+```
+
+```{r}
+boxplot(data$odometer, las=2)
+```
+
+```{r}
+ggplot(data = data, aes(sample=odometer)) +
+  stat_qq() + 
+  stat_qq_line() +
+  scale_y_continuous(breaks = seq(0, 5000000, by = 50000)) 
+```
+Väčšinu problémov ktoré sme mali sme vyriešili vymazaním týchto záznamov, alebo ich upravov pomocou quartilov. 
+
+
+Príprava dáta pre 4. hypotézu. 
+
+
+```{r}
+location <- function(x){
+  
+  if (x >(-85)) {
+    locationtmp <- 'east'
+    return(locationtmp)  
+  }
+  if (x < (-110)) {
+    locationtmp <- 'west'
+    return(locationtmp)  
+  }
+  
+  if (x > (-110)) {
+    locationtmp <- 'mid'
+    return(locationtmp)  
+    }
+  
+}
+```
+
+```{r}
+data$location <- location(data$long)
+```
+```{r}
+data
+```
+
 
 
 
