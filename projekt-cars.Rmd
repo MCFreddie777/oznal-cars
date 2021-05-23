@@ -268,13 +268,13 @@ data[data$model == "",][1:5,]
 ```
 
 ```{r}
-group_manu <- data %>%
+group_model <- data %>%
   group_by(model) %>%
   summarize(frequency = n())
 
-group_manu$model[which(group_manu$model == "")] <- NA
+group_model$model[which(group_model$model == "")] <- NA
 
-group_manu[order(-group_manu$frequency),][1:10,]
+group_model[order(-group_model$frequency),][1:10,]
 ```
 
 ### Stav (condition)
@@ -328,11 +328,11 @@ unique(data$cylinders)
 
 
 ```{r}
-group_manu <- data %>%
+group_cyl <- data %>%
   group_by(cylinders) %>%
   summarize(frequency = n())
 
-ggplot(data = group_manu, aes(x = cylinders, y = frequency)) +
+ggplot(data = group_cyl, aes(x = cylinders, y = frequency)) +
   geom_bar( stat = "identity", fill= 2, color="#ffffff") +
   ylab("Frekvencia") +
   xlab("Počet valcov")
@@ -358,11 +358,11 @@ unique(data$fuel)
 
 
 ```{r}
-group_manu <- data %>%
+group_fuel <- data %>%
   group_by(fuel) %>%
   summarize(frequency = n())
 
-ggplot(data = group_manu, aes(x = fuel, y = frequency)) +
+ggplot(data = group_fuel, aes(x = fuel, y = frequency)) +
   geom_bar( stat = "identity", fill= 2, color="#ffffff") +
   ylab("Frekvencia") +
   xlab("Palivo")+
@@ -421,11 +421,11 @@ unique(data$transmission)
 Vidíme že ide o kategorický atribút vyjadrujúci typ prevodovky.
 
 ```{r}
-group_manu <- data %>%
+group_trans <- data %>%
   group_by(transmission) %>%
   summarize(frequency = n())
 
-ggplot(data = group_manu, aes(x = transmission, y = frequency)) +
+ggplot(data = group_trans, aes(x = transmission, y = frequency)) +
   geom_bar( stat = "identity", fill= 2, color="#ffffff") +
   ylab("Frekvencia") +
   xlab("Prevodovka")+
@@ -434,7 +434,8 @@ ggplot(data = group_manu, aes(x = transmission, y = frequency)) +
 Vidíme že sa potvrdzuje fakt, že Američania nevedia riadiť manuál a že najlepším bezpečnostným systémom áut je manuálna prevodovka. 
 
 > What is that stick?
-![https://9gag.com/gag/apQr2RB](https://img-9gag-fun.9cache.com/photo/apQr2RB_700bwp.webp)
+![manuel](img/manuel.jpg)
+
 
 ### vin (vin)
 
@@ -467,11 +468,11 @@ unique(data$drive)
 ```
 
 ```{r}
-group_manu <- data %>%
+group_drv <- data %>%
   group_by(drive) %>%
   summarize(frequency = n())
 
-ggplot(data = group_manu, aes(x = drive, y = frequency)) +
+ggplot(data = group_drv, aes(x = drive, y = frequency)) +
   geom_bar( stat = "identity", fill= 2, color="#ffffff") +
   ylab("Frekvencia") +
   xlab("Pohon")+
@@ -498,11 +499,11 @@ unique(data$size)
 ```
 
 ```{r}
-group_manu <- data %>%
+group_size <- data %>%
   group_by(size) %>%
   summarize(frequency = n())
 
-ggplot(data = group_manu, aes(x = size, y = frequency)) +
+ggplot(data = group_size, aes(x = size, y = frequency)) +
   geom_bar( stat = "identity", fill= 2, color="#ffffff") +
   ylab("Frekvencia") +
   xlab("Velkosť")+
@@ -528,11 +529,11 @@ unique(data$type)
 
 
 ```{r}
-group_manu <- data %>%
+group_type <- data %>%
   group_by(type) %>%
   summarize(frequency = n())
 
-ggplot(data = group_manu, aes(x = type, y = frequency)) +
+ggplot(data = group_type, aes(x = type, y = frequency)) +
   geom_bar( stat = "identity", fill= 2, color="#ffffff") +
   ylab("Frekvencia") +
   xlab("Typ")+
@@ -778,6 +779,10 @@ Väčšinu problémov ktoré sme mali sme vyriešili vymazaním týchto záznamo
 #### mid, west, east USA
 
 Príprava dáta pre 4. hypotézu - podľa zemepisnej dĺžky rozdelíme inzeráty na východ, stred a západ USA. 
+Hodnoty zemepisnej dĺžky sme približne určili podľa tejto mapy:
+
+![mapa usa](img/usa-lat-long-map.jpg)
+
 
 ```{r}
 data$location <- ifelse(as.double(data$long) > -85, 'east', 
@@ -787,9 +792,57 @@ data$location <- ifelse(as.double(data$long) > -85, 'east',
 
 ## Overenie hypotéz
 
-1. Cena vozidla je vyššia v prípade že v inzeráte je definované VIN číslo.
-1. Trend počtu valcov v autách klesá spolu s rastúcim rokom (Môže za to downsizing motorov a snaha o odbremenenie životného prostredia)
-1. Dieslové autá ktoré majú pohon na všetky kolesá zvyčajne majú v inzerátoch vyšší počet najazdených míľ.
-1. Rozdeliť oblasť inzerátov na 3 časti východná, stredná a západná časť USA podľa súradníc a odsledovať, aké je rozdelenie využívaných aut a či je v strednej časti viac využívaných pickupov ako iných modelov.
+### Cena vozidla je vyššia v prípade že v inzeráte je definované VIN číslo.
 
+```{r}
+data$VIN_defined = apply(data, MARGIN=1, FUN=function(x) x['VIN'] != '')
 
+model <- lm(data$price ~ data$VIN_defined)
+summary(model)
+
+#t.test(price ~ VIN_defined, data=data)
+```
+```{r}
+ggplot(data, aes(x=VIN_defined,y=price)) + geom_boxplot()
+```
+
+### Trend počtu valcov v autách klesá spolu s rastúcim rokom (Môže za to downsizing motorov a snaha o odbremenenie životného prostredia)
+
+```{r}
+ggplot(data, aes(year, cylinders )) + 
+  geom_point() + 
+  geom_line()
+```
+
+### Dieslové autá ktoré majú pohon na všetky kolesá zvyčajne majú v inzerátoch vyšší počet najazdených míľ.
+
+```{r}
+data$awd_diesel <- apply(data, MARGIN=1, FUN=function(x) x['drive'] == '4wd' & x['fuel'] == 'diesel')
+ggplot(data, aes(x=awd_diesel,y=odometer)) + geom_boxplot()
+```
+
+### Rozdeliť oblasť inzerátov na 3 časti východná, stredná a západná časť USA podľa súradníc a odsledovať, aké je rozdelenie využívaných aut a či je v strednej časti viac využívaných pickupov ako iných modelov.
+
+```{r}
+group_type_east <- data[data$location == 'east',] %>%
+  group_by(type) %>%
+  summarize(frequency = n())
+
+ggplot(data = group_type_east, aes(x = type, y = frequency)) + geom_bar( stat = "identity")
+```
+
+```{r}
+group_type_west <- data[data$location == 'west',] %>%
+  group_by(type) %>%
+  summarize(frequency = n())
+
+ggplot(data = group_type_west, aes(x = type, y = frequency)) + geom_bar( stat = "identity")
+```
+
+```{r}
+group_type_mid <- data[data$location == 'mid',] %>%
+  group_by(type) %>%
+  summarize(frequency = n())
+
+ggplot(data = group_type_mid, aes(x = type, y = frequency)) + geom_bar( stat = "identity")
+```
