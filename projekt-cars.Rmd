@@ -17,6 +17,7 @@ library(Hmisc)
 library(tidyverse)
 library(dplyr)
 library(stringr)
+library(bnlearn)
 ```
 
 Načítanie dát
@@ -793,3 +794,108 @@ data$location <- ifelse(as.double(data$long) > -85, 'east',
 1. Rozdeliť oblasť inzerátov na 3 časti východná, stredná a západná časť USA podľa súradníc a odsledovať, aké je rozdelenie využívaných aut a či je v strednej časti viac využívaných pickupov ako iných modelov.
 
 
+## Bayes
+Je jav, že auto má automat nezávislé od toho či je auto pickup ? 
+![alt text](bn_otazka.png "BN")
+Pravdepodobnosť, že auto ma automat:
+```{r}
+print(nrow(data[data$transmission == "automatic", ])/nrow(data))
+PA = nrow(data[data$transmission == "automatic", ])/nrow(data)
+```
+Pravdepodobnosť, že auto je pickup:
+```{r}
+print(nrow(data[data$type == "pickup", ])/nrow(data))
+PP = nrow(data[data$type == "pickup", ])/nrow(data)
+```
+
+Pravdepodobnosti stavov P(M=1|P,A)
+MID = 1 PICKUP = 1 AUTOMAT = 1
+```{r}
+data_pick = data[data$type == "pickup", ]
+data_pick_automat = data_pick[data_pick$transmission == "automatic", ]
+data_pick_automat_mid =data_pick_automat[data_pick_automat$location == "mid", ]
+Pm1p1a1 = nrow(data_pick_automat_mid) / nrow(data_pick_automat)
+print(nrow(data_pick_automat_mid) / nrow(data_pick_automat))
+```
+MID = 1 PICKUP = 1 AUTOMAT = 0
+```{r}
+data_pick = data[data$type == "pickup", ]
+data_pick_automat = data_pick[!data_pick$transmission == "automatic", ]
+data_pick_automat_mid =data_pick_automat[data_pick_automat$location == "mid", ]
+Pm1p1a0 = nrow(data_pick_automat_mid) / nrow(data_pick_automat)
+print(nrow(data_pick_automat_mid) / nrow(data_pick_automat))
+```
+MID = 1 PICKUP = 0 AUTOMAT = 1
+```{r}
+data_pick = data[!data$type == "pickup", ]
+data_pick_automat = data_pick[data_pick$transmission == "automatic", ]
+data_pick_automat_mid =data_pick_automat[data_pick_automat$location == "mid", ]
+Pm1p0a1 = nrow(data_pick_automat_mid) / nrow(data_pick_automat)
+print(nrow(data_pick_automat_mid) / nrow(data_pick_automat))
+```
+
+MID = 1 PICKUP = 0 AUTOMAT = 0
+```{r}
+data_pick = data[!data$type == "pickup", ]
+data_pick_automat = data_pick[!data_pick$transmission == "automatic", ]
+data_pick_automat_mid =data_pick_automat[data_pick_automat$location == "mid", ]
+Pm1p0a0 = nrow(data_pick_automat_mid) / nrow(data_pick_automat)
+print(nrow(data_pick_automat_mid) / nrow(data_pick_automat))
+```
+Chceme overiť nezávislosť P a A. $\ P(P,A|M) (nevieme spočítať) = P(A|M) * P(P|M)$ - tento vzťah musí platiť pokial maju byť javy nezávislé.
+
+
+$\ P(M=1|P,M) = sum_{P,A} P(M=1,P,A)*P(P)*P(A)$ 
+```{r}
+Pm1ap = Pm1p0a0*(1-PP)*(1-PA) + Pm1p0a1*(1-PP)*(PA) + Pm1p1a0*(PP)*(1-PA) + Pm1p1a1*(PP)*(PA)
+Pm1ap
+```
+
+$\ P(P,A|M=1) = \frac{sum_{P,A} P(M=1,P,A)*P(P)*P(A)}{P(M=1|P,A)} $
+
+
+
+$\ P(P=1,A=1|M=1) $
+```{r}
+Pp1a1m1 = Pm1p1a1*(PP)*(PA) / Pm1ap
+Pp1a1m1
+```
+$\ P(P=0,A=1|M=1) $
+```{r}
+Pp0a1m1 = Pm1p0a1*(1-PP)*(PA) / Pm1ap
+Pp0a1m1
+```
+$\P(P=1,A=0|M=1) $
+```{r}
+Pp1a0m1 = Pm1p1a0*(PP)*(1-PA) / Pm1ap
+Pp1a0m1
+```
+
+$\P(P=0,A=0|M=1) $
+```{r}
+Pp0a0m1 = Pm1p0a0*(1-PP)*(1-PA) / Pm1ap
+Pp0a0m1
+```
+
+Teraz sa pozrieme na druhú časť vzťahu $\ P(A|M) * P(P|M)$
+
+1.$\ P(P=1|M=1) = \sum_{A} P(P=1,A|M=1)$
+```{r}
+Pp1m1 = Pp1a1m1 +  Pp1a0m1
+Pp1m1
+```
+
+1.$\ P(A=1|M=1) = \sum_{P} P(P,A=1|M=1)$
+
+```{r}
+Pa1m1 = Pp1a1m1 + Pp0a1m1
+Pa1m1
+```
+
+Ak by javy P a A boli nezávislé, tak musí pre všetky stavy platiť, že: $\ P(P=1,A=1|M=1) =P(P=1|M=1) * P(A=1|M=1)  $
+
+
+```{r}
+if(Pp1a1m1 == (Pp1m1*Pa1m1)){print('Nezavisle')}else print('zavisle')
+```
+![alt text](bn_suzavisle.png "BN")
