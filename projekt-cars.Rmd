@@ -1,7 +1,6 @@
 ---
-title: "Car price prediction"
+title: "Used Cars Dataset from Craigslist.org"
 output: html_document
-cvičenie: "Utorok 9:00"
 author: Bc. František Gič a Bc. Anton Rusňák
 ---
 
@@ -22,6 +21,8 @@ options(scipen=10)
 ```
 
 Načítanie dát
+
+Vybrali sme si dataset "Used Cars Dataset from Craigslist.org" dostupný na: [https://www.kaggle.com/austinreese/craigslist-carstrucks-data](https://www.kaggle.com/austinreese/craigslist-carstrucks-data).
 
 ```{r}
 data <- read.csv(file = 'data/vehicles.csv', header = TRUE, na.strings=c(""," ","NA","0"))
@@ -86,6 +87,7 @@ Pozrime sa na počet záznamov v datasete, ktoré obsahujú nejakú chýbajúcu 
 
 ```{r}
 na_rows <- data[rowSums(is.na(data)) > 0,]
+nrow(na_rows)
 ```
 
 Vidíme že je to dosť veľký počet dát. Môže za to pridanie parametra `na.strings=c(""," ","NA","0")` pri načítaní súborov.
@@ -132,6 +134,7 @@ Pozrieme sa na vychýlené hodnoty v atribúte
 ```{r}
 boxplot(data$price, las=3)
 ```
+
 Vidíme, že v atribúte `price` máme zopár dosť vysokých hodnôt. Buď ide o luxusné autá, alebo o "špinavé" hodnoty.
 
 ```{r}
@@ -148,13 +151,13 @@ nrow(data[is.null(data$price),])
 nrow(data[is.na(data$price),])
 ```
 
-Čo nás však neteší je však, ako sme sa mohli presvedčiť aj fakť že dosť vela hodnôt (33 753) tohto atribútu je nulových (NA). Domnievame sa, že ide o umelo znížené alebo nešpecifikované sumy, práve z dôvodu rankingu v rebríčkoch inzerátov. Preto sme ich (nuly) v úvode, pri načítaní datasetu, nahradili `NA`.
+Čo nás však neteší je však, ako sme sa mohli presvedčiť, aj fakt že dosť vela hodnôt (33 753) tohto atribútu je nulových (NA). Domnievame sa, že ide o umelo znížené alebo nešpecifikované sumy, práve z dôvodu rankingu v rebríčkoch inzerátov. Preto sme ich (nuly) v úvode, pri načítaní datasetu, nahradili `NA`.
 Vysvetľujeme to tým, že táto praktika sa používa pokiaľ chcete mať inzeráty na prvých stránkach, pretože ludia bežne hľadajú od najnižšej ceny po svoj cenový strop.
 
 Okrem toho tam máme vysoké hodnoty, s ktorými sa popasujeme vo fáze čistenia dát.
 
 ```{r}
-boxplot(data$price, las=2)
+boxplot(data$price, las=3)
 ```
 
 ```{r}
@@ -163,8 +166,6 @@ ggplot(data = data, aes(sample=price)) +
   stat_qq_line() +
   scale_y_continuous(breaks = seq(0, 5000000, by = 50000)) 
 ```
-
-Na ggplot-e máme možnosť vidieť že dáta ceny nepochádzajú z normálneho rozdelenia, a dátová sada je veľmi nafúknutá na koncoch ( veľký počet nulových a áut s vysokou cenou).
 
 ### Rok (year)
 
@@ -303,6 +304,7 @@ ggplot(data = group_cyl, aes(x = cylinders, y = frequency)) +
   ylab("Frekvencia") +
   xlab("Počet valcov")
 ```
+
 ### Typ paliva (fuel)
 
 ```{r}
@@ -331,6 +333,7 @@ ggplot(data = group_fuel, aes(x = fuel, y = frequency)) +
   xlab("Palivo")+
   scale_y_continuous(breaks = seq(0, 500000, by = 20000)) 
 ```
+
 Z histogramu vidíme, že väčšina áut ktoré sú inzerované su benzínové. 
 
 ### Počet kilometrov (odometer)
@@ -358,6 +361,7 @@ Vidíme, že približne 400 záznamov má príliš vysoké hodnoty - máme za do
 ```{r}
 boxplot(data[data$odometer < 1000000,] $odometer, las=2)
 ```
+
 Vidíme že po subsetovaní atribútu pod 1 milión míl sme dospeli k realistickejším dátam. Vidíme že väčšina hodnôt sa pohybuje v rozpätí od cca 45 000 až po 150 000. Medián sa pohybuje niečo pod 100k.
 
 ### Typ prevodovky (transmission)
@@ -385,10 +389,10 @@ ggplot(data = group_trans, aes(x = transmission, y = frequency)) +
   xlab("Prevodovka")+
   scale_y_continuous(breaks = seq(0, 500000, by = 20000)) 
 ```
+
 Vidíme že sa potvrdzuje fakt, že Američania nevedia riadiť manuál a že najlepším bezpečnostným systémom áut je manuálna prevodovka. 
 
-> What is that stick?
-![manuel](img/manuel.jpg)
+![What is that stick?](img/manuel.jpg)
 
 
 ### VIN (vin)
@@ -424,6 +428,7 @@ ggplot(data = group_drv, aes(x = drive, y = frequency)) +
   xlab("Pohon")+
   scale_y_continuous(breaks = seq(0, 500000, by = 20000)) 
 ```
+
 Vidíme že väčšina z predávaných je poháňaná náhonom na všetky štyri kolesá. Veľkou skupinou dát sú aj dáta s neuvedenou hodnootu tohto atribútu.
 
 ### Veľkosť (size)
@@ -451,6 +456,7 @@ ggplot(data = group_size, aes(x = size, y = frequency)) +
   xlab("Velkosť")+
   scale_y_continuous(breaks = seq(0, 500000, by = 20000)) 
 ```
+
 Size vyjadruje veľkosť vozidla. Asi je to optional atribút na craigsliste, pretože ho nemá väčšina záznamov.
 
 ### Karosárske prevedenie (type)
@@ -478,38 +484,49 @@ ggplot(data = group_type, aes(x = type, y = frequency)) +
   scale_y_continuous(breaks = seq(0, 500000, by = 20000)) +
   theme(axis.text.x = element_text(angle = 90))
 ```
+
 ## Párová analýza
 
-### Kategorické atribúty 
-
-### Vplyv typu paliva na počet najazdených míľ
+#### Vplyv typu paliva na počet najazdených míľ
 
 ```{r}
 ggplot(data, aes(x = fuel, y = odometer)) + ylim(10,500000) + geom_boxplot()
 ```
+
 Podľa boxplotu máme možnosť vidieť, že pri dieslových motoroch sa autá predávajú s vyšíím počtom najazdených míľ.
 Čo nás prekvapilo, je napríklad pomer hybridných a benzínových (gas) motorov. Domnievame sa však, že veľa dát je taktiež ešte nezatriedených v dátach s prázdnym atribútom `fuel`.
+
+#### Vplyv náhonu na počet najazdených míľ
 
 ```{r}
 ggplot(data, aes(x = drive, y = odometer)) + ylim(10,500000) + geom_boxplot()
 ```
 
+#### Vplyv typu prevodovky na počet najazdených míľ
 
 ```{r}
 ggplot(data, aes(x = transmission, y = odometer)) + ylim(10,500000) + geom_boxplot()
 ```
 
+#### Vplyv typu paliva na cenu vozidla
+
 ```{r}
 ggplot(data, aes(x = fuel, y = price)) + ylim(10,300000) + geom_boxplot()
 ```
+
+#### Vplyv typu náhonu na cenu vozidla
 
 ```{r}
 ggplot(data, aes(x = drive, y = price)) + ylim(10,300000) + geom_boxplot()
 ```
 
+#### Vplyv typu prevodovky na cenu vozidla
+
 ```{r}
 ggplot(data, aes(x = transmission, y = price)) + ylim(10,300000) + geom_boxplot()
 ```
+
+#### Prevodovka - palivo - počet najazdených míľ
 
 ```{r}
 ggplot(data, aes(x=transmission, y=odometer, color=fuel)) + 
@@ -518,9 +535,13 @@ ggplot(data, aes(x=transmission, y=odometer, color=fuel)) +
   theme_bw()
 ```
 
+#### Prevodovka - cena - náhon - palivo
+
 ```{r}
 ggplot(data = data, aes(x = transmission,y = price, shape = drive, colour= fuel)) + ylim(10,300000) + geom_jitter(size = 4) +  xlab("Prevodovka")
 ```
+
+#### Párová analáza cena - nájazd - rok výroby
 
 ```{r}
 pairs(~price+odometer+year, data = data)
@@ -755,6 +776,7 @@ nrow(data[is.na(data$cylinders),])
 ```{r}
 unique(data$cylinders)
 ```
+
 S týmto atribútom by sme mohli spraviť nasledovné:
 
 Aby sme s ním neskôr mohli pracovať, premeníme ho na numerický nominálny atribút a neznámu hodnotu `other` ozačíme ako NA.
@@ -771,6 +793,10 @@ A ešte prekonvertujeme na integer
 
 ```{r}
 data$cylinders <- as.integer(data$cylinders)
+```
+
+```{r}
+unique(data$cylinders)
 ```
 
 Dropneme riadky
@@ -820,7 +846,8 @@ ggplot(data = data, aes(sample=odometer)) +
   stat_qq_line() +
   scale_y_continuous(breaks = seq(0, 1000000, by = 250000)) 
 ```
-Rozhodli sme sa dropnúť nad threshold.
+
+Rozhodli sme sa dropnúť nad určený threshold.
 
 ```{r}
 top_threshold <- 1000000
@@ -970,33 +997,40 @@ Väčšinu problémov ktoré sme mali sme vyriešili vymazaním týchto záznamo
 ### Cena vozidla je vyššia v prípade že v inzeráte je definované VIN číslo.
 
 ```{r}
-model <- lm(data$price ~ data$VIN_defined)
-summary(model)
-
-#t.test(price ~ VIN_defined, data=data)
+kruskal.test(x = data$price, g = as.factor(data$VIN_defined))
 ```
-
 ```{r}
 ggplot(data, aes(x=VIN_defined,y=price)) + geom_boxplot()
 ```
 
 Na boxplote je možno vidieť že priemerná cena vozidla je naozaj vyššia, v prípade že vozidlo má uvedené VIN číslo v inzeráte.
+Rovnako aj Kruskal-Wallace test vyššiel s p-hodnotou menšiou ako 0.05, týmpádom nulovú hypotézu zamietame (ak je definované VIN číslo, cena sa nemení aj keď nie je definované) a môžme vyhlásiť, že definovanie VIN čísla v inzeráte má vplyv na cenu vozidla.
 
 ### Trend počtu valcov v autách klesá spolu s rastúcim rokom (Môže za to downsizing motorov a snaha o odbremenenie životného prostredia)
 
 ```{r}
+chisq.test(data$year, data$cylinder, correct=FALSE)
+```
+```{r}
 ggplot(data = data, aes(x = year, y = cylinders)) +
    stat_summary(geom = "line", fun = mean)
 ```
-Na grafe môžme vidieť, že skutočne (síce počet dát s zvyšujúcim rokom rastie), z vyšujúcim rokom sa zničuje počet valcov v motoroch.
+
+Na porovnanie dvoch kategorických (aj keď numerických) atribútov cena a počtu valcov sme vybrali Chi-squared test.
+P hodnota je veľmi malá (2.2e-16), a preto opäť zamietame nulovú hypotézu.
+Na grafe môžme taktiež vidieť, že skutočne (aj keď počet vozidiel so zvyšujúcim rokom rastie), so zvyšujúcim rokom sa znižuje počet valcov v motoroch.
 
 ### Dieslové autá ktoré majú pohon na všetky kolesá zvyčajne majú v inzerátoch vyšší počet najazdených míľ.
 
 ```{r}
 data$awd_diesel <- apply(data, MARGIN=1, FUN=function(x) x['drive'] == '4wd' & x['fuel'] == 'diesel')
+kruskal.test(x = data$odometer, g = as.factor(data$awd_diesel))
+```
+
+```{r}
 ggplot(data, aes(x=awd_diesel,y=odometer)) + geom_boxplot()
 ```
-Na boxplote môžme vidieť že autá s pohonom na všetky kolesá a s typom paliva diesel majú vyšší počet priemerne najazdených míľ.
+Na boxplote, aj podľa p hodnoty kruskal-wallis testu môžme vidieť že autá s pohonom na všetky kolesá a s typom paliva diesel majú vyšší počet priemerne najazdených míľ.
 
 ### Rozdeliť oblasť inzerátov na 3 časti východná, stredná a západná časť USA podľa súradníc a odsledovať, aké je rozdelenie využívaných aut a či je v strednej časti viac využívaných pickupov ako iných modelov.
 
@@ -1004,11 +1038,14 @@ Na boxplote môžme vidieť že autá s pohonom na všetky kolesá a s typom pal
 ggplot(data, aes(x = type, group=location, fill=location)) +
   geom_bar(position = "dodge" )
 ```
+
 Na grafe môžme vidieť, že vo východnej USA je najväčší počet sedanov. V strednej časti USA sa najviac využívajú SUV autá.
 
 ## Bayesovská štatistika
 
 Je jav, že inzerované auto má automat nezávislý od toho či je inzerované auto pickup ?
+
+
 ![bn](img/bn_otazka.png)
 
 Pravdepodobnosť, že auto má automat:
@@ -1064,6 +1101,7 @@ print(nrow(data_pick_automat_mid) / nrow(data_pick_automat))
 
 Chceme overiť nezávislosť P a A. $\ P(P,A|M) (nevieme spočítať) = P(A|M) * P(P|M)$ - tento vzťah musí platiť pokial maju byť javy nezávislé.
 
+Spočítame pravdepodobnosť cez všetky stavy:
 
 $\ P(M=1|P,M) = sum_{P,A} P(M=1,P,A)*P(P)*P(A)$
 
@@ -1072,29 +1110,33 @@ Pm1ap = Pm1p0a0*(1-PP)*(1-PA) + Pm1p0a1*(1-PP)*(PA) + Pm1p1a0*(PP)*(1-PA) + Pm1p
 Pm1ap
 ```
 
+Vypočítame si pravdepodobnosť pre každý stav na základe, že inzerát pochádza zo strednej ameriky.
+
 $\ P(P,A|M=1) = \frac{sum_{P,A} P(M=1,P,A)*P(P)*P(A)}{P(M=1|P,A)} $
 
-
-
 $\ P(P=1,A=1|M=1) $
+
 ```{r}
 Pp1a1m1 = Pm1p1a1*(PP)*(PA) / Pm1ap
 Pp1a1m1
 ```
 
 $\ P(P=0,A=1|M=1) $
+
 ```{r}
 Pp0a1m1 = Pm1p0a1*(1-PP)*(PA) / Pm1ap
 Pp0a1m1
 ```
 
 $\P(P=1,A=0|M=1) $
+
 ```{r}
 Pp1a0m1 = Pm1p1a0*(PP)*(1-PA) / Pm1ap
 Pp1a0m1
 ```
 
 $\P(P=0,A=0|M=1) $
+
 ```{r}
 Pp0a0m1 = Pm1p0a0*(1-PP)*(1-PA) / Pm1ap
 Pp0a0m1
@@ -1103,6 +1145,7 @@ Pp0a0m1
 Teraz sa pozrieme na druhú časť vzťahu $\ P(A|M) * P(P|M)$
 
 1.$\ P(P=1|M=1) = \sum_{A} P(P=1,A|M=1)$
+
 ```{r}
 Pp1m1 = Pp1a1m1 +  Pp1a0m1
 Pp1m1
@@ -1119,7 +1162,8 @@ Ak by javy P a A boli nezávislé, tak musí pre všetky stavy platiť, že: $\ 
 
 
 ```{r}
-if(Pp1a1m1 == (Pp1m1*Pa1m1)) {
+if(Pp1a1m1 == (Pp1m1*Pa1m1)) 
+{
   print('Nezávislé')
 } else {
   print('Závislé')
